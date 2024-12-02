@@ -1,29 +1,33 @@
-export const safeReports = (reports: number[][]): number => {
-  const safeReports = reports.map(report => {
-    let state: "increasing" | "decreasing" | "initial" = "initial";
-    let lastValue = Infinity;
+// Get variants of report by removing one element at a time
+const variants = (report: number[]): number[][] =>
+  report.map((_, i) => report.filter((_, j) => i !== j));
 
-    for (const currentValue of report) {
-      if (currentValue === lastValue) {
-        return false;
-      }
-      if (lastValue !== Infinity) {
-        if (Math.abs(currentValue - lastValue) > 3) {
-          return false;
-        }
-        if (state === "initial") {
-          state = currentValue > lastValue ? "increasing" : "decreasing";
-        } else if (state === "increasing" && currentValue < lastValue) {
-          return false;
-        } else if (state === "decreasing" && currentValue > lastValue) {
-          return false;
-        }
-      }
+export const isSafeReport = (report: number[]): boolean => {
+  let isAscending = Number(report[0]) < Number(report[1]);
 
-      lastValue = currentValue;
+  for (let i = 0; i < report.length; i++) {
+    const currentValue = Number(report[i]);
+    const previousValue = Number(report[i - 1]);
+    const difference = Math.abs(currentValue - previousValue);
+
+    if (
+      difference > 3 ||
+      difference === 0 ||
+      (isAscending && currentValue < previousValue) ||
+      (!isAscending && currentValue > previousValue)
+    ) {
+      return false;
     }
-    return true;
-  });
-
-  return safeReports.filter(Boolean).length;
+  }
+  return true;
 };
+
+export const safeReports = (reports: number[][], withDampener: boolean = false): number =>
+  reports.filter(report => {
+    if (withDampener) {
+      const reportVariants = variants(report);
+      const isSafe = reportVariants.some(isSafeReport);
+      return isSafe;
+    }
+    return isSafeReport(report);
+  }).length;
