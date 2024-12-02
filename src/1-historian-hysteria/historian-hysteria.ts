@@ -1,4 +1,4 @@
-export const historianHysteria = (firstList: number[], secondList: number[]): number => {
+export const listDistance = (firstList: number[], secondList: number[]): number => {
   const sortedFirstList = firstList.sort((a, b) => a - b);
   const sortedSecondList = secondList.sort((a, b) => a - b);
 
@@ -10,3 +10,12 @@ export const historianHysteria = (firstList: number[], secondList: number[]): nu
     return acc + Math.abs(curr - (sortedSecondList[i] || 0));
   }, 0);
 };
+
+export const similarityScore = (firstList: number[], secondList: number[]): number =>
+  firstList.reduce(
+    (acc, firstListElement) =>
+      acc +
+      firstListElement *
+        secondList.filter(secondListElement => secondListElement === firstListElement).length,
+    0,
+  );
