@@ -38,6 +38,39 @@ const getMiddlePage = (pages: string[]): number => {
   return Number(pages[middleIndex]);
 };
 
+const correctInvalidOrder = (orderMap: Map<string, string[]>, numbers: string[]): string[] => {
+  const seen = new Set<string>();
+
+  for (let i = 0; i < numbers.length; i++) {
+    const current = numbers[i] as string;
+
+    if (orderMap.has(current)) {
+      const children = orderMap.get(current) as string[];
+      const invalidNumbers = new Set<string>();
+      if (orderMap.has(current)) {
+        const children = orderMap.get(current) as string[];
+
+        for (const prev of seen) {
+          if (children.includes(prev)) {
+            invalidNumbers.add(prev);
+          }
+        }
+      }
+      for (const num of invalidNumbers) {
+        seen.delete(num);
+      }
+      seen.add(current);
+      for (const num of invalidNumbers) {
+        seen.add(num);
+      }
+    } else {
+      seen.add(current);
+    }
+  }
+
+  return Array.from(seen);
+};
+
 export const printQueue = (inputString: string): number => {
   const instructions = inputString.trim().split("\n");
   const splitIndex = instructions.findIndex(instruction => instruction === "");
@@ -49,4 +82,20 @@ export const printQueue = (inputString: string): number => {
   const validInstructions = queue.filter(instruction => isValidOrdering(orderMap, instruction));
 
   return validInstructions.reduce((acc, curr) => acc + getMiddlePage(curr), 0);
+};
+
+export const printInvalidQueue = (inputString: string): number => {
+  const instructions = inputString.trim().split("\n");
+  const splitIndex = instructions.findIndex(instruction => instruction === "");
+
+  const orderingRules = instructions.slice(0, splitIndex);
+  const queue = instructions.slice(splitIndex + 1).map(instruction => instruction.split(","));
+
+  const orderMap = constructOrderMap(orderingRules);
+  const invalidInstructions = queue.filter(instruction => !isValidOrdering(orderMap, instruction));
+  const correctedInstructions = invalidInstructions.map(instruction =>
+    correctInvalidOrder(orderMap, instruction),
+  );
+
+  return correctedInstructions.reduce((acc, curr) => acc + getMiddlePage(curr), 0);
 };
