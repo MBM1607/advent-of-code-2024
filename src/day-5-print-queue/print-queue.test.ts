@@ -3,7 +3,7 @@ import path from "path";
 import { expect, test } from "vitest";
 import { printInvalidQueue, printQueue } from "./print-queue.js";
 
-test("testing day-4-ceres-search", async () => {
+test("testing day-5-print-queue", async () => {
   const sample = await readFile(path.join(__dirname, "sample.txt"), "utf-8");
   expect(printQueue(sample)).toBe(143);
   expect(printInvalidQueue(sample)).toBe(123);
