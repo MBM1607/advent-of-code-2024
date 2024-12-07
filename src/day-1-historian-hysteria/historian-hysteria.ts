@@ -6,7 +6,6 @@ export const listDistance = (firstList: number[], secondList: number[]): number 
     throw new Error("Lists must be of equal length");
 
   return sortedFirstList.reduce((acc, curr, i) => {
-    console.log(curr, sortedSecondList[i]);
     return acc + Math.abs(curr - (sortedSecondList[i] || 0));
   }, 0);
 };

@@ -26,8 +26,6 @@ export const xmasWordSearch = (input: string): number => {
     }
   }
 
-  console.log({ horizontals, verticals, diagonals: Object.values(diagonals) });
-
   return (
     horizontals.reduce((acc, row) => acc + countXmasWord(row), 0) +
     verticals.reduce((acc, row) => acc + countXmasWord(row), 0) +
@@ -59,8 +57,6 @@ export const xMasSymbolSearch = (input: string): number => {
   const grid = strToGrid(input);
   const regex = /M.S\n.A.\nM.S/gm;
   const grids = [...getAll3x3Grid(grid), ...getAll3x3Grid(transpose(grid))];
-
-  console.log(grids);
 
   return grids.reduce((acc, grid) => {
     return acc + (grid.match(regex) || grid.split("").toReversed().join("").match(regex) ? 1 : 0);
