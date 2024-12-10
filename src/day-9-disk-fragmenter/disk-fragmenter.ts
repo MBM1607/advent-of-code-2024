@@ -1,48 +1,124 @@
-const getLastNonFreeSpaceIndex = (blocks: string[]) => {
-  for (let i = blocks.length - 1; i >= 0; i--) {
-    if (blocks[i] !== ".") return [i, blocks[i] as string] as const;
-  }
-  throw new Error("No non-free space found");
+type FileBlock = {
+  id: number;
+  size: number;
+  position: number;
 };
 
-export const diskFragmenter = (input: string) => {
-  const diskmap = input.trim().split("");
-  let diskCount = 0;
-  let blocks = diskmap.reduce<string[]>((acc, curr, i) => {
-    let character = ".";
-    if (i % 2 === 0) {
-      character = diskCount.toString();
-      diskCount++;
+type Block = number | null;
+
+const calculateTotalLength = (files: FileBlock[]) => {
+  const lastFile = files[files.length - 1] as FileBlock;
+  return lastFile.position + lastFile.size;
+};
+
+const calculateChecksum = (blocks: number[]) =>
+  blocks.reduce((sum, block, index) => sum + index * block, 0);
+
+const countConsecutiveBlocks = (blocks: Block[], start: number, id: number) => {
+  let count = 0;
+  for (let i = start; i < blocks.length && blocks[i] === id; i++) {
+    count++;
+  }
+  return count;
+};
+
+const findLeftmostFreeSpaceForFile = (blocks: Block[], size: number) => {
+  for (let i = 0; i < blocks.length; i++) {
+    let hasEnoughSpace = true;
+    for (let j = 0; j < size; j++) {
+      if (blocks[i + j] !== null) {
+        hasEnoughSpace = false;
+        break;
+      }
     }
-
-    for (let i = 0; i < Number(curr); i++) {
-      acc.push(character);
+    if (hasEnoughSpace) {
+      return i;
     }
-    return acc;
-  }, []);
+  }
+  return blocks.length;
+};
 
-  while (true) {
-    const freeSpaceIndex = blocks.indexOf(".");
-    const lastFreeSpaceIndex = blocks.lastIndexOf(".");
+const moveFile = (blocks: Block[], from: number, to: number, size: number) => {
+  const fileId = blocks[from] as Block;
+  for (let i = 0; i < size; i++) {
+    blocks[from + i] = null;
+  }
+  for (let i = 0; i < size; i++) {
+    blocks[to + i] = fileId;
+  }
+};
 
-    if (!blocks.slice(freeSpaceIndex, lastFreeSpaceIndex).some(block => block !== ".")) {
-      // If there is a non-dot character in the free space, we need to move it to the start
-      break;
-    }
+const parseDiskMap = (input: string): FileBlock[] => {
+  const numbers = input.split("").map(Number);
+  const files: FileBlock[] = [];
+  let position = 0;
+  let id = 0;
 
-    const [lastNonFreeSpaceIndex, lastDiskFileBlock] = getLastNonFreeSpaceIndex(blocks);
-
-    blocks[freeSpaceIndex] = lastDiskFileBlock;
-    blocks[lastNonFreeSpaceIndex] = ".";
+  for (let i = 0; i < numbers.length; i += 2) {
+    const size = numbers[i] as number;
+    const freeSpace = numbers[i + 1] || 0;
+    files.push({
+      id,
+      size,
+      position,
+    });
+    position += size + freeSpace;
+    id++;
   }
 
-  const freeSpaceIndex = blocks.indexOf(".");
+  return files;
+};
 
-  let checksum = blocks.slice(0, freeSpaceIndex).reduce((acc, curr, i) => {
-    return acc + i * Number(curr);
-  }, 0);
+export const compactDiskPart1 = (blocks: Block[]): number => {
+  // Compact files one block at a time from right to left
+  for (let i = blocks.length - 1; i >= 0; i--) {
+    const block = blocks[i];
+    if (block === undefined || block === null) continue;
+
+    let targetPosition = blocks.indexOf(null); // Get the first null (free space) index
+    if (targetPosition >= i) continue;
+
+    blocks[targetPosition] = block;
+    blocks[i] = null;
+  }
+
+  const leftMostFreeSpace = blocks.indexOf(null);
+  const blocksWithFiles = blocks.slice(0, leftMostFreeSpace) as number[];
+
+  return calculateChecksum(blocksWithFiles);
+};
+
+export function compactDiskPart2(files: FileBlock[], blocks: Block[]): number {
+  // Sort files by ID in descending order
+  const sortedFiles = [...files].sort((a, b) => b.id - a.id);
+
+  // Move each file to leftmost possible position if there is enough free space
+  for (const file of sortedFiles) {
+    const currentPos = blocks.indexOf(file.id);
+    const fileSize = countConsecutiveBlocks(blocks, currentPos, file.id);
+    const targetPos = findLeftmostFreeSpaceForFile(blocks, fileSize);
+
+    if (targetPos < currentPos) {
+      // Move the entire file
+      moveFile(blocks, currentPos, targetPos, fileSize);
+    }
+  }
+
+  return calculateChecksum(blocks.map(block => block ?? 0));
+}
+
+export const diskFragmenter = (input: string) => {
+  const files = parseDiskMap(input);
+  const blocks: Block[] = new Array(calculateTotalLength(files)).fill(null);
+
+  for (const file of files) {
+    for (let i = 0; i < file.size; i++) {
+      blocks[file.position + i] = file.id;
+    }
+  }
 
   return {
-    checksum,
+    part1Checksum: compactDiskPart1([...blocks]),
+    part2Checksum: compactDiskPart2(files, [...blocks]),
   };
 };
