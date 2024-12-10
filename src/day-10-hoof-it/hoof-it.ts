@@ -1,17 +1,12 @@
 type Grid = [number[], ...number[][]];
 
-const calculateTrailheadScore = (
-  grid: Grid,
-  i: number,
-  j: number,
-  set: Set<string> = new Set<string>(),
-) => {
+const calculateTrail = (grid: Grid, i: number, j: number, ends: string[] = []) => {
   const row = grid[i];
   if (!row) throw new Error("No row found");
   const cell = row[j];
   if (cell === undefined) throw new Error("No cell found");
   if (cell === 9) {
-    set.add(`${i},${j}`);
+    ends.push(`${i},${j}`);
     return;
   }
 
@@ -42,10 +37,10 @@ const calculateTrailheadScore = (
   }
 
   for (const [i, j] of neighbors) {
-    calculateTrailheadScore(grid, i, j, set);
+    calculateTrail(grid, i, j, ends);
   }
 
-  if (cell === 0) return set.size;
+  if (cell === 0) return { score: new Set(ends).size, rating: ends.length };
 };
 
 export const hoofIt = (input: string) => {
@@ -55,6 +50,7 @@ export const hoofIt = (input: string) => {
     .map(row => row.split("").map(Number)) as Grid;
 
   let trailheadScore = 0;
+  let trailheadRating = 0;
 
   for (let i = 0; i < grid.length; i++) {
     for (let j = 0; j < grid[0].length; j++) {
@@ -64,13 +60,17 @@ export const hoofIt = (input: string) => {
       if (cell === undefined) throw new Error("No cell found");
 
       if (cell === 0) {
-        const score = calculateTrailheadScore(grid, i, j);
-        if (score) trailheadScore += score;
+        const trail = calculateTrail(grid, i, j);
+        if (trail) {
+          trailheadScore += trail.score;
+          trailheadRating += trail.rating;
+        }
       }
     }
   }
 
   return {
     trailheadScore,
+    trailheadRating,
   };
 };
